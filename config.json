@@ -1,0 +1,7 @@
+{
+  "engine": "local",
+  "roboflow_api_key": "",
+  "roboflow_model": "thai-coin-detection",
+  "roboflow_version": "1",
+  "confidence_threshold": 40
+}

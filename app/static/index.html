@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ระบบตรวจจับและนับเหรียญไทย (Thai Coin Counter)</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top App Bar -->
+        <header class="app-header">
+            <div class="header-left">
+                <span class="app-icon">🪙</span>
+                <div>
+                    <h1 class="app-title">Thai Coin Counter</h1>
+                    <p class="app-subtitle">ตรวจจับและนับเหรียญ 1฿, 5฿, 10฿</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <span id="engine-badge" class="badge-status badge-engine" title="เอนจินประมวลผล">⚡ Local</span>
+                <span id="connection-badge" class="badge-status badge-connecting">
+                    <span class="status-dot"></span> <span id="status-text">กำลังเชื่อมต่อ...</span>
+                </span>
+                <button id="btn-show-qr" class="btn-icon" title="วิธีต่อมือถือ">📱</button>
+                <button id="btn-toggle-settings" class="btn-icon" title="ตั้งค่า">⚙️</button>
+            </div>
+        </header>
+
+        <!-- Summary Stats Card (Sticky on top of mobile) -->
+        <section class="stats-panel">
+            <div class="total-baht-card">
+                <span class="total-label">ยอดเงินรวม</span>
+                <div class="total-value-row">
+                    <span id="total-baht" class="total-number">0</span>
+                    <span class="currency-unit">บาท</span>
+                </div>
+            </div>
+
+            <div class="coin-counters-grid">
+                <div class="coin-card coin-10">
+                    <div class="coin-badge-icon">10฿</div>
+                    <div class="coin-info">
+                        <span class="coin-name">เหรียญ 10</span>
+                        <span id="count-10" class="coin-count">0</span>
+                    </div>
+                </div>
+
+                <div class="coin-card coin-5">
+                    <div class="coin-badge-icon">5฿</div>
+                    <div class="coin-info">
+                        <span class="coin-name">เหรียญ 5</span>
+                        <span id="count-5" class="coin-count">0</span>
+                    </div>
+                </div>
+
+                <div class="coin-card coin-1">
+                    <div class="coin-badge-icon">1฿</div>
+                    <div class="coin-info">
+                        <span class="coin-name">เหรียญ 1</span>
+                        <span id="count-1" class="coin-count">0</span>
+                    </div>
+                </div>
+
+                <div class="coin-card coin-all">
+                    <div class="coin-badge-icon">รวม</div>
+                    <div class="coin-info">
+                        <span class="coin-name">จำนวนเหรียญ</span>
+                        <span id="total-coins" class="coin-count">0</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Viewport Area -->
+        <main class="viewport-section">
+            <div class="camera-wrapper" id="camera-wrapper">
+                <video id="webcam" playsinline autoplay muted></video>
+                <canvas id="overlay-canvas"></canvas>
+
+                <!-- Reticle / Target Guide -->
+                <div id="guide-reticle" class="guide-reticle visible">
+                    <div class="guide-circle">
+                        <span class="guide-text">วางเหรียญในบริเวณนี้</span>
+                    </div>
+                </div>
+
+                <!-- Live Stream HUD -->
+                <div class="camera-hud-top">
+                    <span id="fps-counter" class="hud-pill">FPS: 0</span>
+                    <span id="detection-status-pill" class="hud-pill hud-status-idle">⚪ รอวางเหรียญ</span>
+                    <span id="camera-label" class="hud-pill">กล้อง: กำลังโหลด</span>
+                </div>
+
+                <!-- Toast Notification -->
+                <div id="toast" class="toast"></div>
+            </div>
+        </main>
+
+        <!-- Bottom Controls Toolbar -->
+        <footer class="app-toolbar">
+            <!-- Switch Camera Button -->
+            <button id="btn-switch-camera" class="toolbar-btn" title="สลับกล้องหน้า-หลัง">
+                <span class="toolbar-btn-icon">🔄</span>
+                <span class="toolbar-btn-label">สลับกล้อง</span>
+            </button>
+
+            <!-- Torch / Flashlight Button -->
+            <button id="btn-torch" class="toolbar-btn" title="เปิด/ปิดไฟแฟลช">
+                <span class="toolbar-btn-icon">💡</span>
+                <span class="toolbar-btn-label">ไฟฉาย</span>
+            </button>
+
+            <!-- Snapshot / Freeze Count Button -->
+            <button id="btn-snapshot" class="toolbar-btn primary-action" title="จับภาพนิ่งเพื่อนับ">
+                <span class="toolbar-btn-icon">📸</span>
+                <span class="toolbar-btn-label">จับภาพนับ</span>
+            </button>
+
+            <!-- Toggle Guide Reticle -->
+            <button id="btn-toggle-guide" class="toolbar-btn active" title="เปิด/ปิดกรอบเล็ง">
+                <span class="toolbar-btn-icon">🎯</span>
+                <span class="toolbar-btn-label">กรอบเล็ง</span>
+            </button>
+
+            <!-- Sound toggle -->
+            <button id="btn-toggle-sound" class="toolbar-btn" title="เสียงเตือน">
+                <span class="toolbar-btn-icon" id="sound-icon">🔔</span>
+                <span class="toolbar-btn-label">เสียง</span>
+            </button>
+        </footer>
+
+        <!-- Settings Slide-up Drawer -->
+        <div id="settings-drawer" class="modal-drawer">
+            <div class="drawer-header">
+                <h2>⚙️ ตั้งค่าระบบตรวจจับ</h2>
+                <button id="btn-close-settings" class="btn-close">&times;</button>
+            </div>
+            <div class="drawer-body">
+                <!-- AI Engine Selector -->
+                <div class="setting-group engine-select-group">
+                    <label><strong>🤖 เลือกเอนจินประมวลผล (Engine):</strong></label>
+                    <div class="engine-buttons">
+                        <button type="button" id="btn-engine-local" class="btn-engine active">
+                            <span>⚡ Local (OpenCV)</span>
+                            <small>ออฟไลน์ เร็วพิเศษ สำหรับเครื่องทั่วไป</small>
+                        </button>
+                        <button type="button" id="btn-engine-yolo" class="btn-engine">
+                            <span>🧠 YOLO (Offline AI)</span>
+                            <small>โมเดล AI ในเครื่อง แม่นยำ ไม่ต้องต่อเน็ต</small>
+                        </button>
+                        <button type="button" id="btn-engine-roboflow" class="btn-engine">
+                            <span>🌐 Roboflow (Cloud AI)</span>
+                            <small>โมเดล SUT บน Cloud (ต้องใช้ API Key)</small>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Roboflow API Key Config Box -->
+                <div id="roboflow-config-box" class="config-box">
+                    <label for="input-roboflow-key">
+                        <strong>🔑 Roboflow API Key:</strong>
+                        <span id="roboflow-key-status" class="status-pill status-missing">ยังไม่ใส่คีย์</span>
+                    </label>
+                    <div class="input-with-button">
+                        <input type="password" id="input-roboflow-key" placeholder="ใส่ API Key จาก Roboflow..." autocomplete="off">
+                        <button id="btn-save-roboflow-key" class="btn-sm btn-primary">บันทึก</button>
+                    </div>
+                    <div class="setting-hint">
+                        ใช้โมเดล <code>sut-jpi3i/thai-coin-detection/1</code><br>
+                        👉 <a href="https://app.roboflow.com" target="_blank" rel="noopener">สมัครและรับ API Key ฟรีที่ roboflow.com</a>
+                    </div>
+                </div>
+
+                <div class="setting-group checkbox-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-guide-only">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div>
+                        <strong>🎯 ตรวจจับเฉพาะในกรอบเล็ง</strong>
+                        <div class="setting-hint">ตัดสิ่งรบกวนรอบข้างออกทั้งหมด จะนับเฉพาะเหรียญที่วางในวงกลม</div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label for="slider-sensitivity">
+                        ความไวในการหาขอบเหรียญ (Sensitivity): <span id="val-sensitivity">30</span>
+                    </label>
+                    <input type="range" id="slider-sensitivity" min="15" max="60" value="30" step="1">
+                    <span class="setting-hint">ค่ายิ่งน้อยจะตรวจจับวงกลมได้ง่ายขึ้น (ระวังวัตถุแปลกปลอม)</span>
+                </div>
+
+                <div class="setting-group">
+                    <label for="slider-min-radius">
+                        รัศมีเหรียญเล็กสุด (Min Radius): <span id="val-min-radius">20</span> px
+                    </label>
+                    <input type="range" id="slider-min-radius" min="10" max="80" value="20" step="2">
+                </div>
+
+                <div class="setting-group">
+                    <label for="slider-max-radius">
+                        รัศมีเหรียญใหญ่สุด (Max Radius): <span id="val-max-radius">160</span> px
+                    </label>
+                    <input type="range" id="slider-max-radius" min="60" max="300" value="160" step="5">
+                </div>
+
+                <div class="setting-group">
+                    <label for="slider-fps">
+                        อัตราตรวจจับสด (Stream Rate): <span id="val-fps">10</span> FPS
+                    </label>
+                    <input type="range" id="slider-fps" min="2" max="25" value="10" step="1">
+                    <span class="setting-hint">ปรับลดลงหากมือถือเครื่องร้อนหรือเน็ตช้า</span>
+                </div>
+
+                <div class="setting-group">
+                    <button id="btn-reset-settings" class="btn-secondary">รีเซ็ตการตั้งค่าเริ่มต้น</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Connection Info Modal -->
+        <div id="mobile-info-modal" class="modal-backdrop">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h2>📱 วิธีเปิดบนมือถือ</h2>
+                    <button id="btn-close-mobile-modal" class="btn-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>1. เชื่อมต่อมือถือเข้ากับ Wi-Fi เดียวกันกับคอมพิวเตอร์เครื่องนี้</p>
+                    <p>2. เปิดเบราว์เซอร์บนมือถือ (Safari หรือ Chrome) แล้วเข้า URL ด้านล่างนี้:</p>
+                    
+                    <div class="url-box">
+                        <span id="mobile-url-text">กำลังโหลด URL...</span>
+                        <button id="btn-copy-url" class="btn-sm">คัดลอก</button>
+                    </div>
+
+                    <div class="notice-box">
+                        <strong>⚠️ ข้อควรทราบสำหรับมือถือ:</strong>
+                        <p>เบราว์เซอร์จะขึ้นเตือนความปลอดภัยเนื่องจากใช้ Self-signed HTTPS ให้อนุญาตดังนี้:</p>
+                        <ul>
+                            <li><strong>Chrome:</strong> กด "ขั้นสูง (Advanced)" &gt; "ไปยังไซต์นี้ (ไม่ปลอดภัย)"</li>
+                            <li><strong>Safari:</strong> กด "แสดงรายละเอียด (Show Details)" &gt; "เข้าชมเว็บไซต์นี้ (Visit this website)"</li>
+                        </ul>
+                        <p>จากนั้นกดยินยอมให้ใช้งานกล้อง ระบบจะเปิดกล้องมือถือให้ทันทีครับ!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Canvas for frame extraction -->
+    <canvas id="hidden-canvas" style="display: none;"></canvas>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

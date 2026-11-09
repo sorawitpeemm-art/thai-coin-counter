@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# SSL Certificates & Private Keys
+certs/
+*.pem
+*.key
+*.crt
+
+# Temporary files & Logs
+*.log
+.env
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
